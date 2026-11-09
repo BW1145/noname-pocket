@@ -6,3 +6,4 @@ local.properties
 runtime/
 dist/
 __pycache__/
+.work/
