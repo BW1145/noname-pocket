@@ -12,13 +12,29 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Prepare complete official game
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.10.11.3-1989 --repo lieren2023/noname-for-dummies --pattern noname-for-dummies-Android-v1.10.11.3.apk --dir "$RUNNER_TEMP"
           python tools/prepare.py "$RUNNER_TEMP/noname-for-dummies-Android-v1.10.11.3.apk" --output "$RUNNER_TEMP/noname"
-      - name: Check custom JavaScript
+          rm "$RUNNER_TEMP/noname-for-dummies-Android-v1.10.11.3.apk"
+      - name: Prepare original Android client
+        run: |
+          git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/nonameShijian/noname-shijian-android.git "$RUNNER_TEMP/client"
+          git -C "$RUNNER_TEMP/client" checkout 19a50d10b5791ca9d9b9aeaac6ba40a3ff552fc8
+          git -C "$RUNNER_TEMP/client" submodule update --init --recursive
+          python tools/prepare_android.py "$RUNNER_TEMP/client" "$RUNNER_TEMP/noname"
+          cd "$RUNNER_TEMP/client"
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          npm ci
+          npx --yes cordova@12.0.0 platform add android@14.0.0 --nosave
+      - name: Connect original native modules
+        run: python tools/configure_android.py "$RUNNER_TEMP/client"
+      - name: Check changed JavaScript
         run: find overrides -name '*.js' -print0 | xargs -0 -n 1 node --check
       - name: Build signed APK
         env:
@@ -27,23 +43,28 @@ jobs:
         run: |
           printf '%s' "$SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/noname.jks"
           export NONAME_KEYSTORE="$RUNNER_TEMP/noname.jks"
-          export NONAME_DIR="$RUNNER_TEMP/noname"
-          chmod +x android/gradlew
-          cd android
-          ./gradlew --no-daemon assembleRelease --console=plain
+          python - <<'PY'
+          import json,os,pathlib
+          value={'android':{'release':{'keystore':os.environ['NONAME_KEYSTORE'],'storePassword':os.environ['NONAME_KEY_PASSWORD'],'password':os.environ['NONAME_KEY_PASSWORD'],'alias':'noname-pocket','keystoreType':'jks','packageType':'apk'}}}
+          pathlib.Path(os.environ['RUNNER_TEMP'],'build.json').write_text(json.dumps(value))
+          PY
+          cd "$RUNNER_TEMP/client"
+          npx --yes cordova@12.0.0 build android --release --buildConfig="$RUNNER_TEMP/build.json" -- --packageType=apk
       - name: Publish complete package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk dist/Noname-Pocket-0.1.0.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify dist/Noname-Pocket-0.1.0.apk
+          cp "$RUNNER_TEMP/client/platforms/android/app/build/outputs/apk/release/app-release.apk" dist/Noname-Pocket-0.1.1.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify dist/Noname-Pocket-0.1.1.apk
           python - <<'PY'
-          import zipfile, pathlib
-          apk=pathlib.Path('dist/Noname-Pocket-0.1.0.apk')
+          import zipfile,pathlib
+          apk=pathlib.Path('dist/Noname-Pocket-0.1.1.apk')
           with zipfile.ZipFile(apk) as z:
-              for name in ['assets/index.html','assets/noname/ui/create/menu/settingsLayout.js','assets/noname/ui/create/menu/modeHelp.js']:
-                  assert z.getinfo(name).file_size > 0
+              names=z.namelist()
+              for key in ['assets/www/cordova.js','assets/www/cordova_plugins.js','assets/www/app/noname.zip']:
+                  assert z.getinfo(key).file_size>0
+              assert any('cordova-plugin-file/www/resolveLocalFileSystemURI.js' in n for n in names)
           print('Complete APK bytes:',apk.stat().st_size)
           PY
-          gh release create v0.1.0 dist/Noname-Pocket-0.1.0.apk --title '无名杀·随身版 0.1.0' --notes-file CHANGELOG.md
+          gh release create v0.1.1 dist/Noname-Pocket-0.1.1.apk --title '无名杀·随身版 0.1.1' --notes-file CHANGELOG.md
