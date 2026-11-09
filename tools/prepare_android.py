@@ -3,6 +3,8 @@ from pathlib import Path
 import argparse,json,re,shutil,zipfile
 p=argparse.ArgumentParser();p.add_argument('client',type=Path);p.add_argument('game',type=Path);a=p.parse_args();client=a.client
 old='com.noname.shijian';new='app.noname.pocket'
+# Regenerate platform plugin registrations for this new Android project.
+(client/'plugins/android.json').unlink(missing_ok=True)
 # Keep native classes, permissions, file-system plugins, and initialization supplied by the client.
 for f in (client/'java').rglob('*.java'):
  s=f.read_text(encoding='utf-8');f.write_text(s.replace(old,new),encoding='utf-8')

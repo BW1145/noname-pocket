@@ -28,6 +28,7 @@ jobs:
           git -C "$RUNNER_TEMP/client" checkout 19a50d10b5791ca9d9b9aeaac6ba40a3ff552fc8
           git -C "$RUNNER_TEMP/client" submodule update --init --recursive
           python tools/prepare_android.py "$RUNNER_TEMP/client" "$RUNNER_TEMP/noname"
+          rm -rf "$RUNNER_TEMP/noname"
           cd "$RUNNER_TEMP/client"
           git config --global url."https://github.com/".insteadOf ssh://git@github.com/
           npm ci
