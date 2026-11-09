@@ -6,6 +6,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: https://downloads.gradle.org/distributions/gradle-8.13-bin.zip
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
