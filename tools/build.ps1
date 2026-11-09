@@ -25,7 +25,7 @@ try {
  if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
  & python (Join-Path $PSScriptRoot 'configure_android.py') $client
  if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
- & npx.cmd --yes cordova@12.0.0 build android --release "--buildConfig=$buildConfig" -- --packageType=apk
+ & npx.cmd --yes cordova@12.0.0 compile android --release "--buildConfig=$buildConfig" -- --packageType=apk
  if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
  $dist=Join-Path $projectRoot 'dist'
  New-Item -ItemType Directory -Force -Path $dist | Out-Null

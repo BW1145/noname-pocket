@@ -1,6 +1,6 @@
 """Apply the upstream client's documented Android project setup."""
 from pathlib import Path
-import argparse,json,os,re
+import argparse,re
 p=argparse.ArgumentParser();p.add_argument('client',type=Path);a=p.parse_args();project=a.client/'platforms/android'
 f=project/'settings.gradle';s=f.read_text();s+='\ninclude ":NonameCore"\ninclude ":MTDataFiles"\n';f.write_text(s)
 repos='''ext.repos = {
@@ -26,6 +26,11 @@ dependencies {
 ''')
 for f in project.glob('cordova-plugin-local-notification/**/*.gradle'):
  s=f.read_text();f.write_text(re.sub(r'\bcompile\s+', 'implementation ',s))
+# Keep the client's splash resources compatible with Android 15's edge-to-edge default.
+f=project/'app/src/main/res/values/themes.xml';s=f.read_text()
+if 'android:windowOptOutEdgeToEdgeEnforcement' not in s:
+ s=s.replace('</style>','<item name="android:windowOptOutEdgeToEdgeEnforcement">true</item></style>',1)
+f.write_text(s)
 # Keep the native importer registered even if platform generation changes its ordering.
 f=project/'app/src/main/res/xml/config.xml';s=f.read_text()
 if 'app.noname.pocket.FinishImport' not in s:s=s.replace('</widget>','<feature name="FinishImport"><param name="android-package" value="app.noname.pocket.FinishImport" /></feature></widget>')

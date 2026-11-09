@@ -50,7 +50,7 @@ jobs:
           pathlib.Path(os.environ['RUNNER_TEMP'],'build.json').write_text(json.dumps(value))
           PY
           cd "$RUNNER_TEMP/client"
-          npx --yes cordova@12.0.0 build android --release --buildConfig="$RUNNER_TEMP/build.json" -- --packageType=apk
+          npx --yes cordova@12.0.0 compile android --release --buildConfig="$RUNNER_TEMP/build.json" -- --packageType=apk
       - name: Publish complete package
         env:
           GH_TOKEN: ${{ github.token }}
