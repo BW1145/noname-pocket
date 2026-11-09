@@ -33,7 +33,18 @@ s=s.replace(needle,needle+'''
             androidx.core.view.ViewCompat.requestApplyInsets(frame);
         });''');f.write_text(s,encoding='utf-8')
 # Reuse the client's resource importer, with a versioned complete game zip.
-f=client/'www/app/index.js';s=f.read_text(encoding='utf-8');s=s.replace('"use strict";','"use strict";\nif (localStorage.getItem("noname_inited") === "nodejs") localStorage.removeItem("noname_inited");',1);f.write_text(s,encoding='utf-8')
+f=client/'www/app/index.js';s=f.read_text(encoding='utf-8');s=s.replace('"use strict";','"use strict";\nif (localStorage.getItem("noname_inited") === "nodejs") localStorage.removeItem("noname_inited");',1)
+# The complete package imports its built-in archive without contacting GitHub.
+start=s.rindex('      checkConnection()');end=s.index('\n    }\n  }\n  new App()',start)
+s=s[:start]+s[end:]
+s=s.replace('innerText: "正在连接",','innerText: "准备导入内置资源",',1).replace('innerText: "正在加载github资源...",','innerText: "正在检测内置资源...",',1)
+s=s.replace('const zipDataDiv = document.getElementById("changesite");\n                  if (zipDataDiv)', '''button.classList.remove("disabled");
+                  button.innerText = "导入内置资源";
+                  button.onclick = () => cordova.exec(() => {}, () => {}, "FinishImport", "assetZip", []);
+                  const zipDataDiv = document.getElementById("changesite");
+                  if (zipDataDiv)''',1)
+s=s.replace('检测到内置压缩包存在，是否解压？\\n注意: 此客户端不是懒人包的情况建议点击取消，然后在此页面在线下载最新离线包','首次启动需要导入内置游戏资源，是否开始？')
+f.write_text(s,encoding='utf-8')
 f=client/'www/index.html';s=f.read_text(encoding='utf-8').replace('content="user-scalable=no"','content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"');s=s.replace('<head>', '<head>\n<script>if(localStorage.getItem("noname_inited")==="nodejs")localStorage.removeItem("noname_inited");</script>',1);f.write_text(s,encoding='utf-8')
 archive=client/'www/app/noname.zip'
 archive.parent.mkdir(parents=True,exist_ok=True)
