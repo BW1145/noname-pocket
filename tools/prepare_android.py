@@ -32,7 +32,7 @@ s=s.replace(needle,needle+'''
         });''');f.write_text(s,encoding='utf-8')
 # Reuse the client's resource importer, with a versioned complete game zip.
 f=client/'www/app/index.js';s=f.read_text(encoding='utf-8');s=s.replace('"use strict";','"use strict";\nif (localStorage.getItem("noname_inited") === "nodejs") localStorage.removeItem("noname_inited");',1);f.write_text(s,encoding='utf-8')
-f=client/'www/index.html';s=f.read_text(encoding='utf-8').replace('content="user-scalable=no"','content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"');f.write_text(s,encoding='utf-8')
+f=client/'www/index.html';s=f.read_text(encoding='utf-8').replace('content="user-scalable=no"','content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"');s=s.replace('<head>', '<head>\n<script>if(localStorage.getItem("noname_inited")==="nodejs")localStorage.removeItem("noname_inited");</script>',1);f.write_text(s,encoding='utf-8')
 archive=client/'www/app/noname.zip'
 archive.parent.mkdir(parents=True,exist_ok=True)
 with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=3) as z:
