@@ -1,0 +1,49 @@
+name: Build Android package
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare complete official game
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.10.11.3-1989 --repo lieren2023/noname-for-dummies --pattern noname-for-dummies-Android-v1.10.11.3.apk --dir "$RUNNER_TEMP"
+          python tools/prepare.py "$RUNNER_TEMP/noname-for-dummies-Android-v1.10.11.3.apk" --output "$RUNNER_TEMP/noname"
+      - name: Check custom JavaScript
+        run: find overrides -name '*.js' -print0 | xargs -0 -n 1 node --check
+      - name: Build signed APK
+        env:
+          SIGNING_KEY: ${{ secrets.NONAME_KEYSTORE_BASE64 }}
+          NONAME_KEY_PASSWORD: ${{ secrets.NONAME_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/noname.jks"
+          export NONAME_KEYSTORE="$RUNNER_TEMP/noname.jks"
+          export NONAME_DIR="$RUNNER_TEMP/noname"
+          chmod +x android/gradlew
+          cd android
+          ./gradlew --no-daemon assembleRelease --console=plain
+      - name: Publish complete package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/Noname-Pocket-0.1.0.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify dist/Noname-Pocket-0.1.0.apk
+          python - <<'PY'
+          import zipfile, pathlib
+          apk=pathlib.Path('dist/Noname-Pocket-0.1.0.apk')
+          with zipfile.ZipFile(apk) as z:
+              for name in ['assets/index.html','assets/noname/ui/create/menu/settingsLayout.js','assets/noname/ui/create/menu/modeHelp.js']:
+                  assert z.getinfo(name).file_size > 0
+          print('Complete APK bytes:',apk.stat().st_size)
+          PY
+          gh release create v0.1.0 dist/Noname-Pocket-0.1.0.apk --title '无名杀·随身版 0.1.0' --notes-file CHANGELOG.md
