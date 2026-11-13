@@ -9,6 +9,8 @@ old='com.noname.shijian';new='app.noname.pocket'
 for f in (client/'java').rglob('*.java'):
  s=f.read_text(encoding='utf-8');f.write_text(s.replace(old,new),encoding='utf-8')
 source=client/'java/com/noname/shijian';dest=client/'java/app/noname/pocket';dest.parent.mkdir(parents=True,exist_ok=True);shutil.move(str(source),str(dest))
+# Match the Java class name on case-sensitive build hosts.
+(dest/'updateDataApplication.java').rename(dest/'UpdateDataApplication.java')
 config=client/'config.xml';s=config.read_text(encoding='utf-8').replace(old,new).replace('version="1.6.8"','version="0.1.1"').replace('<widget id=', '<widget android-versionCode="16009" id=',1).replace('<name>无名杀</name>','<name>无名杀·随身版</name>').replace('value="16008"','value="16009"').replace('name="hostname" value="localhost"','name="hostname" value="appassets.androidplatform.net"')
 s=s.replace('<preference name="Fullscreen" value="true" />','<preference name="Fullscreen" value="true" />\n    <preference name="android-minSdkVersion" value="26" />',1)
 config.write_text(s,encoding='utf-8')
