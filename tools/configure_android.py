@@ -2,7 +2,14 @@
 from pathlib import Path
 import argparse,re
 p=argparse.ArgumentParser();p.add_argument('client',type=Path);a=p.parse_args();project=a.client/'platforms/android'
-f=project/'settings.gradle';s=f.read_text();s+='\ninclude ":NonameCore"\ninclude ":MTDataFiles"\n';f.write_text(s)
+# Cordova regenerates settings.gradle and the app dependencies during compile.
+properties=project/'project.properties'
+content=properties.read_text(encoding='utf-8')
+references=re.findall(r'^android\.library\.reference\.(\d+)=',content,re.MULTILINE)
+next_reference=max(map(int,references),default=0)+1
+with properties.open('a',encoding='utf-8') as file:
+ for index,module in enumerate(('NonameCore','MTDataFiles'),next_reference):
+  file.write(f'\nandroid.library.reference.{index}={module}\n')
 repos='''ext.repos = {
  google()
  mavenCentral()
@@ -20,8 +27,6 @@ dependencies {
     implementation 'com.alibaba:fastjson:1.1.55.android'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'org.java-websocket:Java-WebSocket:1.5.6'
-    implementation project(':NonameCore')
-    implementation project(':MTDataFiles')
 }
 ''')
 for f in project.glob('cordova-plugin-local-notification/**/*.gradle'):
