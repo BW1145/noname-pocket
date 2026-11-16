@@ -58,11 +58,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p dist
-          cp "$RUNNER_TEMP/client/platforms/android/app/build/outputs/apk/release/app-release.apk" dist/Noname-Pocket-0.1.1.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify dist/Noname-Pocket-0.1.1.apk
+          cp "$RUNNER_TEMP/client/platforms/android/app/build/outputs/apk/release/app-release.apk" dist/Noname-Pocket-0.1.2.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify dist/Noname-Pocket-0.1.2.apk
           python - <<'PY'
           import zipfile,pathlib
-          apk=pathlib.Path('dist/Noname-Pocket-0.1.1.apk')
+          apk=pathlib.Path('dist/Noname-Pocket-0.1.2.apk')
           with zipfile.ZipFile(apk) as z:
               names=z.namelist()
               for key in ['assets/www/cordova.js','assets/www/cordova_plugins.js','assets/www/app/noname.zip']:
@@ -70,4 +70,4 @@ jobs:
               assert any('cordova-plugin-file/www/resolveLocalFileSystemURI.js' in n for n in names)
           print('Complete APK bytes:',apk.stat().st_size)
           PY
-          gh release create v0.1.1 dist/Noname-Pocket-0.1.1.apk --title '无名杀·随身版 0.1.1' --notes-file CHANGELOG.md
+          gh release create v0.1.2 dist/Noname-Pocket-0.1.2.apk --title '无名杀·随身版 0.1.2' --notes-file CHANGELOG.md

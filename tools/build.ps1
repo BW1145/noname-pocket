@@ -29,5 +29,5 @@ try {
  if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
  $dist=Join-Path $projectRoot 'dist'
  New-Item -ItemType Directory -Force -Path $dist | Out-Null
- Copy-Item -LiteralPath (Join-Path $client 'platforms/android/app/build/outputs/apk/release/app-release.apk') -Destination (Join-Path $dist 'Noname-Pocket-0.1.1.apk')
+ Copy-Item -LiteralPath (Join-Path $client 'platforms/android/app/build/outputs/apk/release/app-release.apk') -Destination (Join-Path $dist 'Noname-Pocket-0.1.2.apk')
 } finally { Pop-Location; Remove-Item -LiteralPath $buildConfig -ErrorAction SilentlyContinue }

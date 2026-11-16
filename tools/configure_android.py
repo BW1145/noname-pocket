@@ -40,10 +40,37 @@ f.write_text(s)
 f=project/'app/src/main/res/xml/config.xml';s=f.read_text()
 if 'app.noname.pocket.FinishImport' not in s:s=s.replace('</widget>','<feature name="FinishImport"><param name="android-package" value="app.noname.pocket.FinishImport" /></feature></widget>')
 f.write_text(s)
+# Use Android's configured WebView from the first launch, including when a
+# previous Pocket version saved a different package in nonameyuri.
+activity=project/'NonameCore/src/main/java/com/noname/core/activities/WebViewUpgradeCordovaActivity.java'
+source=activity.read_text(encoding='utf-8')
+upgrade_call='''        WebViewUpgradeUtils webViewUpgradeUtils = new WebViewUpgradeUtils();
+        webViewUpgradeUtils.upgrade(this, new Thread(() -> {
+            ActivityOnCreate(extras);
+        }));'''
+assert source.count(upgrade_call) == 1
+activity.write_text(source.replace(upgrade_call,'        ActivityOnCreate(extras);')
+    .replace('import com.noname.core.utils.WebViewUpgradeUtils;\n',''),encoding='utf-8')
+
+# The import page only shows the provider picker when this method is exposed.
+bridge=project/'NonameCore/src/main/java/com/noname/core/NonameJavaScriptInterface.java'
+source=bridge.read_text(encoding='utf-8')
+picker='''    @JavascriptInterface
+    @SuppressWarnings("unused")
+    public void changeWebviewProvider() {
+        Intent newIntent = new Intent(context, WebViewSelectionActivity.class);
+        newIntent.setAction(Intent.ACTION_VIEW);
+        activity.startActivity(newIntent);
+    }
+
+'''
+assert source.count(picker) == 1
+bridge.write_text(source.replace(picker,'')
+    .replace('import com.noname.core.activities.WebViewSelectionActivity;\n',''),encoding='utf-8')
+
 # Check the concrete runtime wiring that failed in 0.1.0.
 assert 'cordova-plugin-file' in (a.client/'package.json').read_text()
 assert 'cordova-plugin-file-transfer' in (a.client/'package.json').read_text()
 assert 'org.apache.cordova.file.FileUtils' in s
 assert 'org.apache.cordova.filetransfer.FileTransfer' in s
-assert (project/'NonameCore/src/main/java/com/noname/core/activities/WebViewUpgradeCordovaActivity.java').is_file()
 print('Original native file plugins, importer and Cordova activity wired.')

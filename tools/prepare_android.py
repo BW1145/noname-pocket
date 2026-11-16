@@ -11,16 +11,23 @@ for f in (client/'java').rglob('*.java'):
 source=client/'java/com/noname/shijian';dest=client/'java/app/noname/pocket';dest.parent.mkdir(parents=True,exist_ok=True);shutil.move(str(source),str(dest))
 # Match the Java class name on case-sensitive build hosts.
 (dest/'updateDataApplication.java').rename(dest/'UpdateDataApplication.java')
-config=client/'config.xml';s=config.read_text(encoding='utf-8').replace(old,new).replace('version="1.6.8"','version="0.1.1"').replace('<widget id=', '<widget android-versionCode="16009" id=',1).replace('<name>无名杀</name>','<name>无名杀·随身版</name>').replace('value="16008"','value="16009"').replace('name="hostname" value="localhost"','name="hostname" value="appassets.androidplatform.net"')
+config=client/'config.xml';s=config.read_text(encoding='utf-8').replace(old,new).replace('version="1.6.8"','version="0.1.2"').replace('<widget id=', '<widget android-versionCode="16010" id=',1).replace('<name>无名杀</name>','<name>无名杀·随身版</name>').replace('value="16008"','value="16010"').replace('name="hostname" value="localhost"','name="hostname" value="appassets.androidplatform.net"')
 s=s.replace('<preference name="Fullscreen" value="true" />','<preference name="Fullscreen" value="true" />\n    <preference name="android-minSdkVersion" value="26" />',1)
 config.write_text(s,encoding='utf-8')
 # The original Windows hook uses case-insensitive CordovaLib paths.
 f=client/'hooks/after_platform_add/copy_files.js';s=f.read_text(encoding='utf-8').replace("'./cordovaLib'", "'./CordovaLib'").replace("'cordovaLib'", "'CordovaLib'");f.write_text(s,encoding='utf-8')
-pkg=client/'package.json';data=json.loads(pkg.read_text());data['name']=new;data['displayName']='无名杀·随身版';data['version']='0.1.1';pkg.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+pkg=client/'package.json';data=json.loads(pkg.read_text());data['name']=new;data['displayName']='无名杀·随身版';data['version']='0.1.2';pkg.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 # Platform generation copies native source into the new namespace.
-f=dest/'FinishImport.java';s=f.read_text(encoding='utf-8');start=s.index('            String[] v = info.versionName.split');end=s.index('            return version;',start)+len('            return version;');s=s[:start]+'''            NonameImportActivity.VERSION = info.versionCode;
+f=dest/'FinishImport.java';s=f.read_text(encoding='utf-8');start=s.index('            String[] v = info.versionName.split');end=s.index('            return version;',start)+len('            return version;');s=s[:start]+'''            // The bundled game is unchanged from 0.1.1.
+            NonameImportActivity.VERSION = 16009;
             return info.versionCode;'''+s[end:];f.write_text(s,encoding='utf-8')
-f=dest/'MainActivity.java';s=f.read_text(encoding='utf-8');needle='        super.initWebViewSettings(webview, settings);';assert needle in s
+f=dest/'MainActivity.java';s=f.read_text(encoding='utf-8')
+start=s.index('        CheckBox upgrade = floatingView.findViewById(R.id.upgrade);')
+end=s.index('        // 设置监听器来处理关闭按钮点击事件',start)
+s=s[:start]+'        floatingView.findViewById(R.id.upgrade).setVisibility(View.GONE);\n\n'+s[end:]
+for unused in ('android.app.AlertDialog','android.view.KeyEvent','android.widget.CheckBox'):
+ s=s.replace(f'import {unused};\n','')
+needle='        super.initWebViewSettings(webview, settings);';assert needle in s
 s=s.replace(needle,needle+'''
         settings.setTextZoom(100);
         settings.setUseWideViewPort(true);
